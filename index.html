@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Zepto Weekly Profit Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#f6f4fb;--card:#fff;--ink:#1d1633;--mute:#6b6385;--line:#e4dff0;--brand:#5b2ea6;--gain:#12804a;--loss:#c62f3b;--gainbg:#e3f5ec;--lossbg:#fbe7e9;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#130e22;--card:#1d1633;--ink:#f2eefc;--mute:#a79fc0;--line:#322a4d;--brand:#a98bf0;--gain:#4fd391;--loss:#ff7a85;--gainbg:#12332a;--lossbg:#3a1a24}}
+:root[data-theme="dark"]{--bg:#130e22;--card:#1d1633;--ink:#f2eefc;--mute:#a79fc0;--line:#322a4d;--brand:#a98bf0;--gain:#4fd391;--loss:#ff7a85;--gainbg:#12332a;--lossbg:#3a1a24}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45}
+main{max-width:520px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.5rem;margin:0 0 14px;font-weight:800}
+h2{font-size:1rem;margin:22px 0 10px;font-weight:800;color:var(--brand)}
+.nav{display:grid;grid-template-columns:48px 1fr 48px;gap:8px;align-items:center;margin-bottom:14px}
+.nav button{height:44px;font-size:1.2rem}
+.wk{text-align:center;font-weight:800}
+.wk small{display:block;color:var(--mute);font-weight:600;font-size:.78rem}
+.result{border-radius:16px;padding:18px;background:var(--gainbg);border:1px solid var(--line);margin-bottom:14px}
+.result.loss{background:var(--lossbg)}
+.lbl{font-size:.85rem;color:var(--mute);font-weight:600}
+.big{font-size:2.3rem;font-weight:800;color:var(--gain);letter-spacing:-.02em}
+.result.loss .big{color:var(--loss)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.stat{background:var(--card);border-radius:10px;padding:10px 12px;border:1px solid var(--line)}
+.stat b{display:block;font-size:1.05rem}
+.stat span{font-size:.78rem;color:var(--mute)}
+.card{border:1px solid var(--line);background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.dh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-weight:800}
+.dh em{font-style:normal;font-size:.9rem}
+.pos{color:var(--gain)}.neg{color:var(--loss)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{display:block;font-size:.76rem;font-weight:600;color:var(--mute)}
+input{display:block;width:100%;margin-top:3px;padding:10px 11px;font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px}
+input:focus-visible,button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+button{padding:11px;font:inherit;font-weight:700;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.hist{display:flex;width:100%;justify-content:space-between;align-items:center;text-align:left;margin-bottom:8px;font-weight:600}
+.hist small{display:block;color:var(--mute);font-weight:400}
+.hist.on{border-color:var(--brand)}
+.now{margin:-8px 0 14px;font-size:.88rem;font-weight:600;color:var(--mute)}
+.card.today{border:2px solid var(--brand)}
+.note{font-size:.78rem;color:var(--mute);text-align:center;margin-top:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>Zepto Weekly Profit</h1>
+<p class="now" id="now"></p>
+
+<div class="nav">
+  <button type="button" id="prev" aria-label="Previous week">&lsaquo;</button>
+  <div class="wk" id="wk"></div>
+  <button type="button" id="next" aria-label="Next week">&rsaquo;</button>
+</div>
+
+<section class="result" id="res" aria-live="polite">
+  <div class="lbl">Net profit this week</div>
+  <div class="big" id="profit">₹0</div>
+  <div class="stats">
+    <div class="stat"><b id="earned">₹0</b><span>Total earned</span></div>
+    <div class="stat"><b id="petrolOut">₹0</b><span>Petrol cost</span></div>
+    <div class="stat"><b id="orders">0</b><span>Orders</span></div>
+    <div class="stat"><b id="perOrder">₹0</b><span>Profit per order</span></div>
+  </div>
+</section>
+
+<div class="card">
+  <div class="dh">Petrol settings</div>
+  <div class="g2">
+    <label>Petrol price (₹/litre)<input id="price" type="number" inputmode="decimal" min="0" placeholder="e.g. 100"></label>
+    <label>Mileage (km/litre)<input id="mileage" type="number" inputmode="decimal" min="0" placeholder="e.g. 45"></label>
+  </div>
+</div>
+
+<h2>Daily entries</h2>
+<div id="days"></div>
+
+<h2>Saved weeks</h2>
+<div id="hist"></div>
+<p class="note">Saved automatically on this device. Day profit = earned − petrol (km ÷ mileage × price) − other costs.</p>
+</main>
+<script>
+(function(){
+  var KEY="zepto-weeks-v1",state={weeks:{},last:{price:"",mileage:""}};
+  try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&s.weeks)state=s}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+  function n(v){var x=parseFloat(v);return isFinite(x)&&x>0?x:0}
+  function inr(v){return (v<0?"-":"")+"₹"+Math.abs(v).toLocaleString("en-IN",{maximumFractionDigits:0})}
+  function key(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+  function parse(k){var p=k.split("-");return new Date(+p[0],+p[1]-1,+p[2])}
+  function monday(d){var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x}
+  function fmt(d,o){return d.toLocaleDateString("en-IN",o)}
+  var cur=key(monday(new Date()));
+  function week(k){
+    if(!state.weeks[k]){
+      var days=[];for(var i=0;i<7;i++)days.push({o:"",e:"",k:"",x:""});
+      state.weeks[k]={price:state.last.price,mileage:state.last.mileage,days:days};
+    }
+    return state.weeks[k];
+  }
+  function dayNet(w,d){
+    var m=n(w.mileage),p=m>0?n(d.k)/m*n(w.price):0;
+    return {petrol:p,net:n(d.e)-p-n(d.x)};
+  }
+  function hasData(w){return w.days.some(function(d){return d.o||d.e||d.k||d.x})}
+  function calc(){
+    var w=week(cur),E=0,P=0,O=0,X=0;
+    w.days.forEach(function(d,i){
+      var r=dayNet(w,d);E+=n(d.e);P+=r.petrol;O+=n(d.o);X+=n(d.x);
+      var el=document.getElementById("dn"+i),has=d.o||d.e||d.k||d.x;
+      el.textContent=has?inr(r.net):"";el.className=r.net<0?"neg":"pos";
+    });
+    var net=E-P-X;
+    document.getElementById("profit").textContent=inr(net);
+    document.getElementById("earned").textContent=inr(E);
+    document.getElementById("petrolOut").textContent=inr(P);
+    document.getElementById("orders").textContent=O;
+    document.getElementById("perOrder").textContent=O>0?inr(net/O):"₹0";
+    document.getElementById("res").classList.toggle("loss",net<0);
+  }
+  function labelOf(k){var a=parse(k),b=new Date(a.getFullYear(),a.getMonth(),a.getDate()+6);return fmt(a,{day:"numeric",month:"short"})+" – "+fmt(b,{day:"numeric",month:"short",year:"numeric"})}
+  function history(){
+    var box=document.getElementById("hist"),keys=Object.keys(state.weeks).filter(function(k){return hasData(state.weeks[k])}).sort().reverse();
+    box.innerHTML="";
+    if(!keys.length){box.innerHTML='<p class="lbl">No weeks saved yet. Enter a day above to start.</p>';return}
+    keys.forEach(function(k){
+      var w=state.weeks[k],net=0,o=0;
+      w.days.forEach(function(d){net+=dayNet(w,d).net;o+=n(d.o)});
+      var b=document.createElement("button");b.type="button";b.className="hist"+(k===cur?" on":"");
+      b.innerHTML="<span>"+labelOf(k)+"<small>"+o+" orders</small></span><span class='"+(net<0?"neg":"pos")+"'>"+inr(net)+"</span>";
+      b.onclick=function(){cur=k;render()};box.appendChild(b);
+    });
+  }
+  function render(){
+    var w=week(cur),a=parse(cur),isNow=cur===key(monday(new Date()));
+    document.getElementById("wk").innerHTML=labelOf(cur)+"<small>"+(isNow?"This week":"Mon – Sun")+"</small>";
+    document.getElementById("price").value=w.price;document.getElementById("mileage").value=w.mileage;
+    var box=document.getElementById("days");box.innerHTML="";
+    w.days.forEach(function(d,i){
+      var dt=new Date(a.getFullYear(),a.getMonth(),a.getDate()+i),c=document.createElement("div"),td=key(dt)===key(new Date());c.className="card"+(td?" today":"");
+      c.innerHTML='<div class="dh"><span>'+fmt(dt,{weekday:"short",day:"numeric",month:"short"})+(td?" (Today)":"")+'</span><em id="dn'+i+'"></em></div><div class="g2">'
+      +'<label>Orders<input data-i="'+i+'" data-f="o" type="number" inputmode="decimal" min="0"></label>'
+      +'<label>Earned (₹)<input data-i="'+i+'" data-f="e" type="number" inputmode="decimal" min="0"></label>'
+      +'<label>Distance (km)<input data-i="'+i+'" data-f="k" type="number" inputmode="decimal" min="0"></label>'
+      +'<label>Other costs (₹)<input data-i="'+i+'" data-f="x" type="number" inputmode="decimal" min="0"></label></div>';
+      box.appendChild(c);
+      c.querySelectorAll("input").forEach(function(inp){inp.value=d[inp.dataset.f]});
+    });
+    calc();history();
+  }
+  document.getElementById("days").addEventListener("input",function(e){
+    var t=e.target;if(!t.dataset.f)return;
+    week(cur).days[+t.dataset.i][t.dataset.f]=t.value;save();calc();history();
+  });
+  ["price","mileage"].forEach(function(f){
+    document.getElementById(f).addEventListener("input",function(e){
+      week(cur)[f]=e.target.value;state.last[f]=e.target.value;save();calc();history();
+    });
+  });
+  function shift(dir){var a=parse(cur);cur=key(new Date(a.getFullYear(),a.getMonth(),a.getDate()+7*dir));render()}
+  document.getElementById("prev").onclick=function(){shift(-1)};
+  document.getElementById("next").onclick=function(){shift(1)};
+  var nowWeek=key(monday(new Date())),nowDay=key(new Date());
+  function tick(){
+    var t=new Date();
+    document.getElementById("now").textContent=fmt(t,{weekday:"long",day:"numeric",month:"long",year:"numeric"})+", "+t.toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+    var w=key(monday(t)),d=key(t);
+    if(w!==nowWeek){if(cur===nowWeek)cur=w;nowWeek=w;nowDay=d;render()}
+    else if(d!==nowDay){nowDay=d;render()}
+  }
+  render();tick();
+  setInterval(tick,1000);
+  document.addEventListener("visibilitychange",tick);
+})();
+</script>
+</body>
+</html>
